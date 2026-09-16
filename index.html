@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Campus Food Menu</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+        background: linear-gradient(135deg, #fff1f7, #ffe4ef);
+        color: #4a1d35;
+      }
+
+      h1 {
+        margin-bottom: 20px;
+        color: #a61b5c;
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+      }
+
+      input, button {
+        padding: 10px 14px;
+        font-size: 14px;
+        border-radius: 8px;
+        border: 1px solid #f2a7c6;
+      }
+
+      button {
+        background: #d81b60;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      button:hover {
+        background: #bf1652;
+      }
+
+      table {
+        width: 100%;
+        max-width: 700px;
+        border-collapse: collapse;
+        background: white;
+        box-shadow: 0 4px 12px rgba(216, 27, 96, 0.15);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      th, td {
+        border: 1px solid #f7d4e5;
+        padding: 12px;
+        text-align: left;
+      }
+
+      th {
+        background: #ec407a;
+        color: white;
+      }
+
+      tr:nth-child(even) {
+        background: #fff3f8;
+      }
+
+      #message {
+        margin-top: 12px;
+        color: #bf1652;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Campus Food Menu</h1>
+
+    <div class="controls">
+      <input id="mealId" type="number" placeholder="Search by Meal ID" />
+      <button id="searchBtn">Search</button>
+      <button onclick="loadMenu()">Load Meals</button>
+    </div>
+
+    <div id="message"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Meal</th>
+          <th>Price</th>
+        </tr>
+      </thead>
+      <tbody id="menuTableBody"></tbody>
+    </table>
+
+    <script>
+      const tableBody = document.getElementById("menuTableBody");
+      const message = document.getElementById("message");
+
+      function renderMeals(meals) {
+        if (!Array.isArray(meals) || meals.length === 0) {
+          tableBody.innerHTML = "";
+          message.textContent = "No meals found.";
+          return;
+        }
+
+        tableBody.innerHTML = meals
+          .map(
+            (meal) => `
+              <tr>
+                <td>${meal.id}</td>
+                <td>${meal.name}</td>
+                <td>₱${meal.price}</td>
+              </tr>
+            `
+          )
+          .join("");
+
+        message.textContent = "";
+      }
+
+      async function loadMenu() {
+        try {
+          const response = await fetch("/api/menu");
+          const meals = await response.json();
+          renderMeals(meals);
+        } catch (error) {
+          message.textContent = "Failed to load meals.";
+          console.error(error);
+        }
+      }
+
+      async function searchMealById() {
+        const id = document.getElementById("mealId").value.trim();
+
+        if (!id) {
+          message.textContent = "Please enter a meal ID.";
+          return;
+        }
+
+        if(id <= 0) {
+          message.textContent = "Please enter a valid meal ID.";
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/menu/${id}`);
+
+          if (!response.ok) {
+            throw new Error("Meal not found");
+          }
+
+          const meal = await response.json();
+          renderMeals([meal]);
+        } catch (error) {
+          message.textContent = "Meal not found.";
+          tableBody.innerHTML = "";
+        }
+      }
+
+      document.getElementById("searchBtn").addEventListener("click", searchMealById);
+      document.getElementById("mealId").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          searchMealById();
+        }
+      });
+
+      loadMenu();
+    </script>
+  </body>
+</html>
